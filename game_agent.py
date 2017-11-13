@@ -34,8 +34,13 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    return 1.0
 
 
 def custom_score_2(game, player):
@@ -60,8 +65,16 @@ def custom_score_2(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    # Improved score
+    own_moves = len(game.get_legal_moves(player))
+    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
+    return float(own_moves - opp_moves)
 
 
 def custom_score_3(game, player):
@@ -86,9 +99,14 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
 
+    if game.is_winner(player):
+        return float("inf")
+
+    # Open move score
+    return float(len(game.get_legal_moves(player)))
 
 class IsolationPlayer:
     """Base class for minimax and alphabeta agents -- this class is never
@@ -212,9 +230,56 @@ class MinimaxPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        # Compute scores to determine minimax decision
+        current_depth = 1
+        scores = [float("-inf")]
+        moves = game.get_legal_moves()
+        for i in range(len(moves)):
+            # Restrict depth of tree search
+            if current_depth > depth:
+                break
 
+            scores.append(max(scores[i], self._min_value(game.forecast_move(moves[i]))))
+            current_depth += 1
+
+        return moves[scores.index(max(scores)) - 1]
+
+    def _terminal_test(self, game):
+        """ Return True if the game is over for the active player
+        and False otherwise.
+        """
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        return not bool(game.get_legal_moves())
+
+    def _min_value(self, game):
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        if self._terminal_test(game):
+            return self.score(game, self)
+
+        score = float("inf")
+        for move in game.get_legal_moves():
+            score = min(score, self._max_value(game.forecast_move(move)))
+
+        return score
+
+    def _max_value(self, game):
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        opponent = game.inactive_player()
+
+        if self._terminal_test(game):
+            return self.score(game, opponent)
+
+        score = float("-inf")
+        for move in game.get_legal_moves(opponent):
+            score = max(score, self._min_value(game.forecast_move(move)))
+
+        return score
 
 class AlphaBetaPlayer(IsolationPlayer):
     """Game-playing agent that chooses a move using iterative deepening minimax

@@ -239,7 +239,7 @@ class MinimaxPlayer(IsolationPlayer):
             if current_depth > depth:
                 break
 
-            scores.append(max(scores[i], self._min_value(game.forecast_move(moves[i]))))
+            scores.append(max(scores[i], self._min_value(game)))
             current_depth += 1
 
         return moves[scores.index(max(scores)) - 1]
@@ -262,7 +262,7 @@ class MinimaxPlayer(IsolationPlayer):
 
         score = float("inf")
         for move in game.get_legal_moves():
-            score = min(score, self._max_value(game.forecast_move(move)))
+            score = min(score, self._max_value(game))
 
         return score
 
@@ -270,14 +270,15 @@ class MinimaxPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        opponent = game.inactive_player()
+        opponent = game.inactive_player
+        # opponent = game.inactive_player()
 
         if self._terminal_test(game):
             return self.score(game, opponent)
 
         score = float("-inf")
         for move in game.get_legal_moves(opponent):
-            score = max(score, self._min_value(game.forecast_move(move)))
+            score = max(score, self._min_value(game))
 
         return score
 

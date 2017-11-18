@@ -40,7 +40,10 @@ def custom_score(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    return 1.0
+    # Improved score
+    own_moves = len(game.get_legal_moves(player))
+    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
+    return float(own_moves - opp_moves)
 
 
 def custom_score_2(game, player):
@@ -71,10 +74,7 @@ def custom_score_2(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    # Improved score
-    own_moves = len(game.get_legal_moves(player))
-    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
-    return float(own_moves - opp_moves)
+    return 1.0
 
 
 def custom_score_3(game, player):
@@ -231,54 +231,44 @@ class MinimaxPlayer(IsolationPlayer):
             raise SearchTimeout()
 
         # Compute scores to determine minimax decision
-        current_depth = 1
-        scores = [float("-inf")]
-        moves = game.get_legal_moves()
+        max_score = float("-inf")
+        max_score_idx = 0
+        moves = game.get_legal_moves(game.active_player)
         for i in range(len(moves)):
-            # Restrict depth of tree search
-            if current_depth > depth:
-                break
+            min_value = self._min_value(game.forecast_move(moves[i]), depth - 1)
+            if min_value > max_score:
+                max_score = min_value
+                max_score_idx = i
 
-            scores.append(max(scores[i], self._min_value(game)))
-            current_depth += 1
+        return moves[max_score_idx]
 
-        return moves[scores.index(max(scores)) - 1]
-
-    def _terminal_test(self, game):
-        """ Return True if the game is over for the active player
-        and False otherwise.
-        """
+    def _min_value(self, game, depth):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        return not bool(game.get_legal_moves())
-
-    def _min_value(self, game):
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise SearchTimeout()
-
-        if self._terminal_test(game):
-            return self.score(game, self)
+        # Restrict depth of tree search
+        if depth == 0 or game.utility(game.active_player) != 0:
+            return self.score(game, game.active_player)
 
         score = float("inf")
-        for move in game.get_legal_moves():
-            score = min(score, self._max_value(game))
+        for move in game.get_legal_moves(game.active_player):
+            max_value = self._max_value(game.forecast_move(move), depth - 1)
+            score = min(score, max_value)
 
         return score
 
-    def _max_value(self, game):
+    def _max_value(self, game, depth):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        opponent = game.inactive_player
-        # opponent = game.inactive_player()
-
-        if self._terminal_test(game):
-            return self.score(game, opponent)
+        # Restrict depth of tree search
+        if depth == 0 or game.utility(game.active_player) != 0:
+            return -1.0 * self.score(game, game.active_player)
 
         score = float("-inf")
-        for move in game.get_legal_moves(opponent):
-            score = max(score, self._min_value(game))
+        for move in game.get_legal_moves(game.active_player):
+            min_value = self._min_value(game.forecast_move(move), depth - 1)
+            score = max(score, min_value)
 
         return score
 

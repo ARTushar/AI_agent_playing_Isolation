@@ -323,8 +323,26 @@ class AlphaBetaPlayer(IsolationPlayer):
         """
         self.time_left = time_left
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        # Initialize the best move so that this function returns something
+        # in case the search fails due to timeout
+        best_move = (-1, -1)
+
+        # # Try out different timer thresholds
+        # timer_threshold = self.TIMER_THRESHOLD + 10
+        # if self.time_left() < timer_threshold:
+        #     return (-1, -1)
+
+        try:
+            # The try/except block will automatically catch the exception
+            # raised when the timer is about to expire.
+            return self.alphabeta(game, self.search_depth)
+
+        except SearchTimeout:
+            # pass  # Handle any actions required after timeout as needed
+            return (-1, -1)
+
+        # Return the best move from the last completed search iteration
+        return best_move
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
@@ -374,5 +392,74 @@ class AlphaBetaPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        # Compute scores to determine minimax decision
+        best_score = float("-inf")
+        best_move = None
+        for move in game.get_legal_moves():
+            min_value = self._min_value(game.forecast_move(move), depth - 1, \
+                alpha, beta)
+            if min_value > best_score:
+                best_score = min_value
+                best_move = move
+
+            # Found the best possible solution at this node?
+            if best_score >= beta:
+                break
+            alpha = max(alpha, best_score)
+
+        return best_move
+
+    def _terminal_state(self, game, depth):
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        # Restrict depth of tree search
+        if depth == 0:
+            return True
+
+        # Player is out of moves
+        if not bool(game.get_legal_moves()):
+            return True
+
+        return False
+
+    def _min_value(self, game, depth, alpha, beta):
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        if self._terminal_state(game, depth):
+            return self.score(game, self)
+
+        score = float("inf")
+        for move in game.get_legal_moves():
+            max_value = self._max_value(game.forecast_move(move), depth - 1, \
+                alpha, beta)
+            score = min(score, max_value)
+
+            # Found the best possible solution at this node?
+            if score <= alpha:
+                break
+            beta = min(beta, score)
+
+        return score
+
+    def _max_value(self, game, depth, alpha, beta):
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        # if self._terminal_state(game, depth, alpha, beta):
+        if self._terminal_state(game, depth):
+            return self.score(game, self)
+
+        score = float("-inf")
+        for move in game.get_legal_moves():
+            min_value = self._min_value(game.forecast_move(move), depth - 1, \
+                alpha, beta)
+            score = max(score, min_value)
+
+            # Found the best possible solution at this node?
+            if score >= beta:
+                break
+            alpha = max(alpha, score)
+
+        return score

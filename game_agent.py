@@ -322,6 +322,7 @@ class AlphaBetaPlayer(IsolationPlayer):
             (-1, -1) if there are no available legal moves.
         """
         self.time_left = time_left
+        depth = self.search_depth
 
         # Initialize the best move so that this function returns something
         # in case the search fails due to timeout
@@ -335,7 +336,15 @@ class AlphaBetaPlayer(IsolationPlayer):
         try:
             # The try/except block will automatically catch the exception
             # raised when the timer is about to expire.
-            return self.alphabeta(game, self.search_depth)
+
+            # return self.alphabeta(game, self.search_depth)
+
+            depth = 0
+            alpha = float("-inf")
+            beta = float("inf")
+            while self.time_left() >= self.TIMER_THRESHOLD:
+                depth += 1
+                best_move = self.alphabeta(game, depth, alpha, beta)
 
         except SearchTimeout:
             # pass  # Handle any actions required after timeout as needed
@@ -391,6 +400,9 @@ class AlphaBetaPlayer(IsolationPlayer):
         """
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
+        # 
+        # if self._terminal_state(game, depth):
+        #     return self.score(game, self)
 
         # Compute scores to determine minimax decision
         best_score = float("-inf")

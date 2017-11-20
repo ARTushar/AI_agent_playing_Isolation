@@ -9,7 +9,6 @@ class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
     pass
 
-
 def custom_score(game, player):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
@@ -43,7 +42,7 @@ def custom_score(game, player):
     # Improved score
     own_moves = len(game.get_legal_moves(player))
     opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
-    return float(own_moves - opp_moves)
+    return float(own_moves - 3 * opp_moves)
 
 
 def custom_score_2(game, player):
@@ -74,8 +73,10 @@ def custom_score_2(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    return 1.0
-
+    # Improved score (aggresive)
+    own_moves = len(game.get_legal_moves(player))
+    opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
+    return float(own_moves - 2 * opp_moves)
 
 def custom_score_3(game, player):
     """Calculate the heuristic value of a game state from the point of view
@@ -105,8 +106,22 @@ def custom_score_3(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    # Open move score
-    return float(len(game.get_legal_moves(player)))
+    opponent = game.get_opponent(player)
+    own_score = opp_score = 0
+
+    for first_move in game.get_legal_moves(player):
+        next_game = game.forecast_move(first_move)
+        for second_move in next_game.get_legal_moves(player):
+            next_next_game = game.forecast_move(second_move)
+            own_score += len(next_game.get_legal_moves(player))
+
+    for first_move in game.get_legal_moves(opponent):
+        next_game = game.forecast_move(first_move)
+        for second_move in next_game.get_legal_moves(opponent):
+            next_next_game = game.forecast_move(second_move)
+            opp_score += len(next_game.get_legal_moves(opponent))
+
+    return float(own_score - 2 * opp_score)
 
 class IsolationPlayer:
     """Base class for minimax and alphabeta agents -- this class is never
@@ -259,7 +274,6 @@ class MinimaxPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # if depth == 0 or not bool(game.get_legal_moves()):
         if self._terminal_state(game, depth):
             return self.score(game, self)
 
@@ -274,7 +288,6 @@ class MinimaxPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # if depth == 0 or not bool(game.get_legal_moves()):
         if self._terminal_state(game, depth):
             return self.score(game, self)
 
@@ -328,17 +341,9 @@ class AlphaBetaPlayer(IsolationPlayer):
         # in case the search fails due to timeout
         best_move = (-1, -1)
 
-        # # Try out different timer thresholds
-        # timer_threshold = self.TIMER_THRESHOLD + 10
-        # if self.time_left() < timer_threshold:
-        #     return (-1, -1)
-
         try:
             # The try/except block will automatically catch the exception
             # raised when the timer is about to expire.
-
-            # return self.alphabeta(game, self.search_depth)
-
             depth = 0
             alpha = float("-inf")
             beta = float("inf")
@@ -347,8 +352,7 @@ class AlphaBetaPlayer(IsolationPlayer):
                 best_move = self.alphabeta(game, depth, alpha, beta)
 
         except SearchTimeout:
-            # pass  # Handle any actions required after timeout as needed
-            return (-1, -1)
+            pass
 
         # Return the best move from the last completed search iteration
         return best_move
@@ -400,9 +404,6 @@ class AlphaBetaPlayer(IsolationPlayer):
         """
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
-        # 
-        # if self._terminal_state(game, depth):
-        #     return self.score(game, self)
 
         # Compute scores to determine minimax decision
         best_score = float("-inf")
@@ -459,7 +460,6 @@ class AlphaBetaPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # if self._terminal_state(game, depth, alpha, beta):
         if self._terminal_state(game, depth):
             return self.score(game, self)
 
